@@ -765,11 +765,11 @@ export default function App() {
       newErrors.fullName = "השם קצר מדי, אנא הזיני שם מלא ותקין";
     }
 
-    const cleanPhone = phoneNumber.replace(/[-\s]/g, "");
+    const cleanPhone = phoneNumber.replace(/[-\s]/g, "").replace(/^\+?972/, "0");
     if (!phoneNumber.trim()) {
       newErrors.phoneNumber = "אנא הזיני מספר טלפון לתיאום משלוח";
-    } else if (!/^\d{9,10}$/.test(cleanPhone)) {
-      newErrors.phoneNumber = "מספר טלפון לא תקין, אנא וודאי מילוי נכון (9 או 10 ספרות)";
+    } else if (!/^0\d{8,9}$/.test(cleanPhone)) {
+      newErrors.phoneNumber = "מספר טלפון לא תקין, אנא וודאי מילוי נכון (למשל 050-1234567)";
     }
 
     if (!city.trim()) {
@@ -813,6 +813,21 @@ export default function App() {
     
     saveOrderToDb("paypal", generatedCode)
       .then(() => {
+        // Safe Meta Pixel Purchase tracking
+        try {
+          if (typeof (window as any).fbq === 'function') {
+            (window as any).fbq('track', 'Purchase', {
+              value: PRODUCT_DATA.salePrice * quantity,
+              currency: 'ILS',
+              content_name: PRODUCT_DATA.hebrewName,
+              content_type: 'product',
+              order_id: generatedCode
+            });
+          }
+        } catch (fbErr) {
+          console.warn("Meta Pixel Purchase track error:", fbErr);
+        }
+
         setTimeout(() => {
           setCheckoutStep("success");
         }, 1200);
@@ -2725,6 +2740,7 @@ export default function App() {
                           }`}
                           dir="ltr"
                         />
+                        <p className="text-[10px] text-[#bca374]/80 mt-1">חובה לתיאום נקודת איסוף ומסירת קוד SMS מחברת השליחויות</p>
                         {formErrors.phoneNumber && (
                           <p className="text-red-400 text-[11px] font-bold mt-1 text-right animate-pulse">{formErrors.phoneNumber}</p>
                         )}
